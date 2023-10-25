@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ToDoApi.Data;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
+using ToDoApi.Dto;
 
 namespace ToDoApi.Controllers
 {
@@ -15,7 +17,7 @@ namespace ToDoApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly ToDoDbContex _context;
-        private readonly IConfiguration _config; // You need to inject IConfiguration for accessing appsettings.json
+        private readonly IConfiguration _config; 
 
         public UserController(ToDoDbContex context, IConfiguration config)
         {
@@ -24,20 +26,19 @@ namespace ToDoApi.Controllers
         }
 
         [HttpPost]
-        [Route("logIn")]
-        public async Task<ActionResult<string>> LogUser([FromBody] User user)
+        [Route("/logIn")]
+        public async Task<ActionResult<string>> LogUser([FromBody] UserDto user)
         {
             try
             {
-                var password = Password.HashPassword(user.Password);
-                var dbUser = _context.Users.FirstOrDefault(u => u.Email == user.Email && u.Password == password);
+                var password = Password.HashPassword(user.password);
+                var dbUser = _context.Users.FirstOrDefault(u => u.Email == user.email && u.Password == password);
 
                 if (dbUser == null)
                 {
                     return BadRequest("Email or password are invalid");
                 }
 
-                // If the user is found, generate a JWT token and return it
                 var token = GenerateToken(dbUser);
                 return Ok(token);
 
@@ -47,6 +48,31 @@ namespace ToDoApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet]
+        [Route("/getUser")]
+        public async Task<ActionResult> GetUser()
+        {
+            try
+            {
+                var userId = Convert.ToInt32(HttpContext.User.FindFirstValue("userId"));
+
+                var user = await _context.Users
+                    .Where(t => t.UserId == userId)
+                    .Select(t=>new
+                    {
+                        email = t.Email,
+                    })
+                    .FirstOrDefaultAsync();
+
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
 
         private string GenerateToken(User user)
         {
@@ -68,7 +94,6 @@ namespace ToDoApi.Controllers
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-            // Create an anonymous object to hold the token and email
             var response = new
             {
                 token = tokenString,
@@ -77,7 +102,6 @@ namespace ToDoApi.Controllers
           
             };
 
-            // Serialize the object to JSON
             var jsonResponse = Newtonsoft.Json.JsonConvert.SerializeObject(response);
 
             Console.WriteLine(Convert.ToInt32(HttpContext.User.FindFirstValue("userId")));

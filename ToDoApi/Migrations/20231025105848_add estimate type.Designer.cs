@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ToDoApi.Data;
 
@@ -11,9 +12,11 @@ using ToDoApi.Data;
 namespace ToDoApi.Migrations
 {
     [DbContext(typeof(ToDoDbContex))]
-    partial class ToDoDbContexModelSnapshot : ModelSnapshot
+    [Migration("20231025105848_add estimate type")]
+    partial class addestimatetype
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -58,8 +61,8 @@ namespace ToDoApi.Migrations
                     b.Property<string>("EstimateDateUnit")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("EstimateDatenumber")
-                        .HasColumnType("numeric");
+                    b.Property<string>("EstimateDatenumber")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .IsRequired()

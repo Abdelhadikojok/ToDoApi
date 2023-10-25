@@ -18,9 +18,14 @@ namespace ToDoApi.Dto
 
         public DateTime? DueDate { get; set; }
 
-        public DateTime? EstimateDate { get; set; }
+        public int? EstimateDatenumber { get; set; }
+
+        public string? EstimateDateUnit { get; set; }
+
 
         [Required]
         public string Title { get; set; }
+
+        public string? CategoryName { get; set; }
     }
 }

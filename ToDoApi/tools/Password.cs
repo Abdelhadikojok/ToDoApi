@@ -11,7 +11,7 @@ namespace ToDoApi.tools
             var sha = SHA256.Create();
             var asByteArray = Encoding.Default.GetBytes(password);
             var hash = sha.ComputeHash(asByteArray);
-            return Convert.ToBase64String(hash); // Correct the capitalization here
+            return Convert.ToBase64String(hash);
         }
     }
 }

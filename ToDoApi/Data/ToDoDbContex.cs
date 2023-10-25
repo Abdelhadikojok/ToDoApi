@@ -18,10 +18,6 @@ namespace ToDoApi.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // n7na hon 3m n2lo la hyda l onmodelcreating 2no ro7 5od el configuration mn el files
-            // hon el asmbly tre2a bt3ni 2no ke el filesthat inharit enity IEntityTypeConfiguration<>
-            // st5dmon la t2ra el configurtion (phone recorder called asembly)
-
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ToDoDbContex).Assembly);
         }

@@ -24,37 +24,33 @@ namespace ToDoApi.Controllers
         [Authorize]
         [HttpGet]
         [Route("/getTasks")]
-        public async Task<ActionResult> GetTasks()
+        public async Task<ActionResult> GetAllTasks()
         {
             try
             {
-                var userid = Convert.ToInt32(HttpContext.User.FindFirstValue("userId"));
-                var id = HttpContext.User.FindFirstValue("userId");
-                //var category = await _context.Categories.Where(c=>c.CategoryId = )
-                var tasks = await _context.TasksCard
-                            .Where(t => t.UserId == userid)
-                            .GroupBy(t => t.CategoryId)
-                            .Select(group => new
-                            {
-                                Category = _context.Categories.Select(c => new {c.CategoryId,c.Name}).FirstOrDefault(c => c.CategoryId == group.Key),
-                                Tasks = group.Select(t => new
-                                {
-                                    t.TaskId,
-                                    t.CategoryId,                                  
-                                    t.Status,
-                                    t.DueDate,
-                                    t.EstimateDate,
-                                    t.Title,
-                                    t.importance
-                                }).ToList()
-                            })
-                            .ToListAsync();
+                var userId = Convert.ToInt32(HttpContext.User.FindFirstValue("userId"));
 
-                if (tasks == null)
-                {
-                    return NotFound();
-                }
-                Console.WriteLine("---------------------------" +  userid);
+                var tasks = await _context.TasksCard
+                    .Where(t => t.UserId == userId)
+                    .GroupBy(t => t.CategoryId)
+                    .Select(group => new
+                    {
+                        Tasks = group.Select(t => new
+                        {
+                            t.TaskId,
+                            t.CategoryId,
+                            t.Status,
+                            t.DueDate,
+                            t.EstimateDatenumber,
+                            t.EstimateDateUnit,
+                            t.Title,
+                            t.importance,
+                            t.Category.Name
+                        }).OrderByDescending(t => t.TaskId).ToList()
+                    })
+                    .ToListAsync();
+
+
 
                 return Ok(tasks);
             }
@@ -64,7 +60,7 @@ namespace ToDoApi.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpPost]
         [Route("/addTasks")]
         public async Task<ActionResult> addTask([FromBody] TaskDto task)
@@ -88,13 +84,13 @@ namespace ToDoApi.Controllers
                     CategoryId = task.CategoryId,
                     Status = task.Status,
                     DueDate = task.DueDate != null ? task.DueDate : null,
-                    EstimateDate = task.EstimateDate != null ? task.DueDate : null,
+                    EstimateDatenumber = task.EstimateDatenumber,
+                    EstimateDateUnit = task.EstimateDateUnit,
                     Title = task.Title,
                     importance = task.importance,
-    };
+                };
                 _context.TasksCard.Add(newTask);
                 await _context.SaveChangesAsync();
-                //Console.WriteLine(Convert.ToInt32(HttpContext.User.FindFirstValue("userId")));
 
                 return Ok();
             }catch (Exception ex)
@@ -103,6 +99,7 @@ namespace ToDoApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/updateTask")]
 
@@ -122,10 +119,8 @@ namespace ToDoApi.Controllers
             }
 
             var UpdatedTask = _context.TasksCard.Where(t=> t.TaskId == task.TaskId && t.UserId == userid).FirstOrDefault();
-             //&& t.UserId == userid
             if (UpdatedTask == null)
             {
-                //Console.WriteLine("--------------------------**" + _context.TasksCard.Where(t => t.TaskId == task.TaskId && t.UserId == userid).FirstOrDefault());
                 return NotFound();
             }
 
@@ -138,13 +133,13 @@ namespace ToDoApi.Controllers
             UpdatedTask.CategoryId = task.CategoryId;
             UpdatedTask.Status = task.Status;
             UpdatedTask.DueDate = task.DueDate;
-            UpdatedTask.EstimateDate = task.EstimateDate;
+            UpdatedTask.EstimateDatenumber = task.EstimateDatenumber;
+            UpdatedTask.EstimateDateUnit = task.EstimateDateUnit;
             UpdatedTask.Title = task.Title;
+            UpdatedTask.importance = task.importance;
 
 
             await _context.SaveChangesAsync();
-
-            //Console.WriteLine("----------------------" + UpdatedTask.UserId);
 
             return Ok();
 
@@ -154,6 +149,7 @@ namespace ToDoApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete]
         [Route("/deleteTask")]
         public async Task<ActionResult> deleteTask(int taskid)
@@ -173,9 +169,10 @@ namespace ToDoApi.Controllers
             _context.TasksCard.Remove(existingTask);
             _context.SaveChanges();
 
-            return StatusCode(200,"success deletion");
+            return Ok();
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/getTask")]
 
@@ -198,7 +195,8 @@ namespace ToDoApi.Controllers
                         t.CategoryId,
                         t.Status,
                         t.DueDate,
-                        t.EstimateDate,
+                        t.EstimateDatenumber,
+                        t.EstimateDateUnit,
                         t.Title
                     })
                     .FirstOrDefault(t => t.TaskId == taskId);
@@ -217,67 +215,44 @@ namespace ToDoApi.Controllers
                 }
          }
 
-        [HttpGet]
-        [Route("/getCategories")]
-        public async Task<ActionResult> GetAllCategories()
-        {
-            try
-            {
-                var categories = await _context.Categories
-                    .Select(c => new
-                    {
-                        c.CategoryId,
-                        c.Name,
-                    })
-                    .ToListAsync();
-
-                if (categories == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(categories);
-            }
-            catch(Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            
-        }
-
         
         [HttpGet]
         [Route("/filter")]
         public IActionResult GetTaskCards([FromQuery] TaskCardFilterDto filter)
         {
-            // Query the database to filter TaskCard items based on the filter criteria.
+            var userId = Convert.ToInt32(HttpContext.User.FindFirstValue("userId"));
+
             var query = _context.TasksCard.AsQueryable();
 
             if (!string.IsNullOrEmpty(filter.Title))
             {
-                var titleToMatch = filter.Title.ToLower(); // Convert input to lowercase
+                var titleToMatch = filter.Title.ToLower();
                 query = query.Where(t => t.Title.ToLower()
                 .StartsWith(titleToMatch)
                 );
             }
 
-            // Add more filter criteria as needed.
+            var taskCards = query
+                    .Where(t => t.UserId == userId)
+                    .GroupBy(t => t.CategoryId)
+                    .Select(group => new
+                    {
+                        Tasks = group.Select(t => new
+                        {
+                            t.TaskId,
+                            t.CategoryId,
+                            t.Status,
+                            t.DueDate,
+                            t.EstimateDatenumber,
+                            t.EstimateDateUnit,
+                            t.Title,
+                            t.importance,
+                            t.Category.Name
+                        }).ToList()
+                    })
+                    .ToList();
 
-            var taskCards = query.GroupBy(c => c.CategoryId)
-                            .Select(group => new
-                            {
-                                Category = _context.Categories.Select(c => new { c.CategoryId, c.Name }).FirstOrDefault(c => c.CategoryId == group.Key),
-                                Tasks = group.Select(t => new
-                                {
-                                    t.TaskId,
-                                    t.CategoryId,
-                                    t.Status,
-                                    t.DueDate,
-                                    t.EstimateDate,
-                                    t.Title,
-                                    t.importance
-                                }).ToList()
-                            }).ToList();
+
             return Ok(taskCards);
         }
 

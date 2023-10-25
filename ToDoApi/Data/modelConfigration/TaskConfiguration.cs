@@ -9,19 +9,17 @@ namespace ToDoApi.Data.modelConfigration
         public void Configure(EntityTypeBuilder<TaskCard> builder)
         {
             builder.HasKey(t => t.TaskId);
-            builder.Property(t => t.Status).IsRequired().HasMaxLength(50); // make it .hascoulnType(varchar).maxleng(255) 
+            builder.Property(t => t.Status).IsRequired().HasMaxLength(50);
             builder.Property(t => t.DueDate).IsRequired();
-            builder.Property(t => t.EstimateDate).IsRequired();
+            builder.Property(t => t.EstimateDatenumber).HasColumnType("numeric");
+            builder.Property(t => t.EstimateDateUnit);
             builder.Property(t => t.Title).IsRequired().HasMaxLength(255);
+            builder.Property(t => t.importance);
 
-            // Define foreign key relationships if needed
             builder.HasOne(t => t.User)
                 .WithMany(u => u.Tasks)
                 .HasForeignKey(t => t.UserId)
-                .OnDelete(DeleteBehavior.Cascade); // means if the user is deleted all tasks will deleted also
-
-                //builder.hasindex(x=>x.officeId).isunique() ==> this means that this forign key when you enter data must not be rpeated
-                //hon wala mara 3mlet .IsRequierd lesh??
+                .OnDelete(DeleteBehavior.Cascade); 
                 
 
             builder.HasOne(t => t.Category)
@@ -29,7 +27,6 @@ namespace ToDoApi.Data.modelConfigration
                 .HasForeignKey(t => t.CategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            //jreb 2nak t3mel default data ==> builder.HasData(loadTasks()) ==>#10 (29:00) 
         }
     }
 }
